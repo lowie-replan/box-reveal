@@ -320,6 +320,15 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     next();
   };
 
+  function shuffled(a){
+    var r=a.slice();
+    for(var i=r.length-1;i>0;i--){
+      var j=Math.floor(Math.random()*(i+1));
+      var t=r[i];r[i]=r[j];r[j]=t;
+    }
+    return r;
+  }
+
   // --- the reveal stage: 4 x 4 coloured boxes covering the picture ---
   var COLORS=["#e63946","#f77f00","#fcbf49","#a7c957","#2ecc71","#2d6a4f","#1abc9c","#00b4d8","#3a86ff","#1d3557","#6c5ce7","#9b5de5","#f15bb5","#8d6e63","#7f8c8d","#b5838d"];
   var opened=[],showAll=false;
@@ -336,7 +345,7 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
   }
   function buildGrid(){
     grid.innerHTML="";opened=[];
-    COLORS.forEach(function(c,i){
+    shuffled(COLORS).forEach(function(c,i){
       var b=h("button","cbox","");
       b.style.background=c;
       b.setAttribute("aria-label","Box "+(i+1));
