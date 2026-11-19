@@ -37,11 +37,10 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
 .pcard{background:var(--card);border:3px solid var(--line);border-radius:20px;padding:12px;box-shadow:0 5px 0 var(--line);display:flex;flex-direction:column;gap:8px}
 .pthumb{width:100%;height:130px;object-fit:cover;border-radius:12px;background:#000}
 .pph{height:70px;display:flex;align-items:center;justify-content:center;border:2px dashed var(--line);border-radius:12px;color:var(--mute);font-weight:600}
-.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .stage{position:relative;width:100%;height:60vh;margin:0 auto;background:#000;border:4px solid var(--gold);border-radius:22px;overflow:hidden;box-shadow:0 8px 0 rgba(0,0,0,.25);user-select:none;-webkit-user-select:none}
 .stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;-webkit-user-drag:none}
 .grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
-.cbox{border-radius:0;padding:0;border:0;color:#fff;font-family:var(--hd);font-size:clamp(1.4rem,6vw,3.4rem);text-shadow:0 3px 0 rgba(0,0,0,.35);box-shadow:inset 0 0 0 2px rgba(0,0,0,.3);transition:opacity .35s,transform .35s;display:flex;align-items:center;justify-content:center}
+.cbox{border-radius:0;padding:0;border:0;box-shadow:inset 0 0 0 2px rgba(0,0,0,.3);transition:opacity .35s,transform .35s}
 .cbox:active:not(:disabled){transform:scale(.96);box-shadow:inset 0 0 0 2px rgba(0,0,0,.3)}
 .cbox:hover:not(.open){filter:brightness(1.12)}
 .cbox.open{opacity:0;transform:scale(.6);pointer-events:none}
@@ -189,11 +188,9 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
   function find(id){for(var i=0;i<S.students.length;i++)if(S.students[i].id===id)return S.students[i];return null}
   function st(){return find(S.sid)}
 
-  function find(id){for(var i=0;i<S.students.length;i++)if(S.students[i].id===id)return S.students[i];return null}
-  function st(){return find(S.sid)}
-
   // ---------- screens ----------
   var SCREENS=["sPick","sPics","sReveal"];
+  var picI=0,picThumbs=false;
   function render(){
     var s=st();
     if(S.view!=="sPick"&&!s)S.view="sPick";
@@ -202,8 +199,21 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     if(S.view==="sReveal"&&picI>=s.pics.length)picI=0;
     SCREENS.forEach(function(id){$(id).classList.toggle("on",id===S.view)});
     if(S.view==="sPick")renderRoster();else if(S.view==="sPics")renderPics();else renderReveal();
+    saveView();
   }
-  function applyView(){S.view="sPick";render()}   // every page load / refresh starts on the student list
+  // The current screen is remembered per browser tab (sessionStorage):
+  // a refresh keeps it, a brand-new tab starts on the student list.
+  var VKEY=KEY+"-view";
+  function saveView(){
+    try{sessionStorage.setItem(VKEY,JSON.stringify({view:S.view,sid:S.sid,pi:picI}))}catch(e){}
+  }
+  function applyView(){
+    var v=null;
+    try{v=JSON.parse(sessionStorage.getItem(VKEY))}catch(e){}
+    if(v&&v.view){S.view=v.view;S.sid=v.sid;picI=v.pi||0}
+    else S.view="sPick";
+    render();
+  }
   function go(view,sid){
     S.view=view;if(sid!==undefined)S.sid=sid;
     save();render();window.scrollTo(0,0);
@@ -243,7 +253,6 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
   $("newName").onkeydown=function(e){if(e.key==="Enter")addStudent()};
 
   // ---------- picture reveal game ----------
-  var picI=0,picThumbs=false;
   function picUrl(p){return SUPABASE_URL+"/storage/v1/object/public/"+BUCKET+"/"+encodeURIComponent(p.path)}
   function errText(r){return r.text().then(function(t){var m="";try{var j=JSON.parse(t);m=j.message||j.error||""}catch(e){}throw new Error(r.status+" "+(m||t).slice(0,140))})}
   function delObj(p){
@@ -320,6 +329,8 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     next();
   };
 
+  // --- the reveal stage: 4 x 4 coloured boxes covering the picture ---
+  var COLORS=["#e63946","#f77f00","#fcbf49","#a7c957","#2ecc71","#2d6a4f","#1abc9c","#00b4d8","#3a86ff","#1d3557","#6c5ce7","#9b5de5","#f15bb5","#8d6e63","#7f8c8d","#b5838d"];
   function shuffled(a){
     var r=a.slice();
     for(var i=r.length-1;i>0;i--){
@@ -328,9 +339,6 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     }
     return r;
   }
-
-  // --- the reveal stage: 4 x 4 coloured boxes covering the picture ---
-  var COLORS=["#e63946","#f77f00","#fcbf49","#a7c957","#2ecc71","#2d6a4f","#1abc9c","#00b4d8","#3a86ff","#1d3557","#6c5ce7","#9b5de5","#f15bb5","#8d6e63","#7f8c8d","#b5838d"];
   var opened=[],showAll=false;
   var stage=$("stage"),grid=$("grid"),rImg=$("rImg");
   function layout(){   // make the stage the same shape as the picture so the 4 x 4 boxes line up with it
@@ -380,7 +388,7 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
   };
   $("rCover").onclick=function(){setShow(false);buildGrid();updateCount()};
   $("rShow").onclick=function(){setShow(!showAll)};
-  function step(d){var n=st().pics.length;picI=(picI+d+n)%n;renderReveal()}
+  function step(d){var n=st().pics.length;picI=(picI+d+n)%n;saveView();renderReveal()}
   $("rPrev").onclick=function(){step(-1)};
   $("rNext").onclick=function(){step(1)};
   window.addEventListener("resize",function(){if(S.view==="sReveal")layout()});
