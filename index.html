@@ -41,10 +41,10 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
 .stage{position:relative;width:100%;height:60vh;margin:0 auto;background:#000;border:4px solid var(--gold);border-radius:22px;overflow:hidden;box-shadow:0 8px 0 rgba(0,0,0,.25);user-select:none;-webkit-user-select:none}
 .stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;-webkit-user-drag:none}
 .grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
-.box{border-radius:0;padding:0;border:0;color:#fff;font-family:var(--hd);font-size:clamp(1.4rem,6vw,3.4rem);text-shadow:0 3px 0 rgba(0,0,0,.35);box-shadow:inset 0 0 0 2px rgba(0,0,0,.3);transition:opacity .35s,transform .35s;display:flex;align-items:center;justify-content:center}
-.box:active:not(:disabled){transform:scale(.96);box-shadow:inset 0 0 0 2px rgba(0,0,0,.3)}
-.box:hover:not(.open){filter:brightness(1.12)}
-.box.open{opacity:0;transform:scale(.6);pointer-events:none}
+.cbox{border-radius:0;padding:0;border:0;color:#fff;font-family:var(--hd);font-size:clamp(1.4rem,6vw,3.4rem);text-shadow:0 3px 0 rgba(0,0,0,.35);box-shadow:inset 0 0 0 2px rgba(0,0,0,.3);transition:opacity .35s,transform .35s;display:flex;align-items:center;justify-content:center}
+.cbox:active:not(:disabled){transform:scale(.96);box-shadow:inset 0 0 0 2px rgba(0,0,0,.3)}
+.cbox:hover:not(.open){filter:brightness(1.12)}
+.cbox.open{opacity:0;transform:scale(.6);pointer-events:none}
 </style>
 </head>
 <body>
@@ -90,7 +90,7 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     <button class="ghost" id="rPrev">◀ Prev</button>
     <button class="ghost" id="rRand">🎲 Random box</button>
     <button class="ghost" id="rCover">🔄 Cover again</button>
-    <button id="rShow">👁 Show answer</button>
+    <button id="rShow">Show answer</button>
     <button class="ghost" id="rNext">Next ▶</button>
   </div>
   <div class="status" id="rAns"></div>
@@ -150,7 +150,7 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     }).then(function(r){
       if(!r.ok)return r.text().then(function(t){var m="";try{m=JSON.parse(t).message||""}catch(e){}throw new Error(r.status+" "+(m||t).slice(0,120))});
       if(!pushTimer)setCloud("Saved");
-    }).catch(function(e){console.error("Supabase save failed:",e);setCloud("Cloud save failed ("+e.message+") – saved on this device")});
+    }).catch(function(e){console.error("Supabase save failed:",e);setCloud("⚠️ Cloud save failed ("+e.message+") – saved on this device")});
   }
   function save(){
     S._ts=Date.now();
@@ -332,12 +332,12 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
   }
   function updateCount(){
     var n=opened.filter(Boolean).length;
-    $("rCount").textContent=n+" / 16 boxes uncovered";
+    $("rCount").textContent="📦 "+n+" / 16 boxes uncovered";
   }
   function buildGrid(){
     grid.innerHTML="";opened=[];
     COLORS.forEach(function(c,i){
-      var b=h("button","box",String(i+1));
+      var b=h("button","cbox",String(i+1));
       b.style.background=c;b.setAttribute("aria-label","Box "+(i+1));
       b.onclick=function(){reveal(i)};
       grid.appendChild(b);opened.push(false);
@@ -356,7 +356,7 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
   function renderReveal(){
     var s=st(),p=s.pics[picI];
     showAll=false;grid.style.display="";
-    $("rShow").textContent="Show answer";$("rAns").textContent="";
+    $("rShow").textContent="👁 Show answer";$("rAns").textContent="";
     buildGrid();updateCount();
     rImg.onload=layout;
     rImg.onerror=function(){$("rAns").textContent="⚠️ Could not load this picture."};
