@@ -339,7 +339,20 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     }
     return r;
   }
-  var opened=[],showAll=false;
+  var opened=[],showAll=false,order=null;
+  // remember colours + uncovered boxes + "answer shown" per tab, so a refresh keeps them
+  var GKEY=KEY+"-game";
+  function saveGame(){
+    var s=st();if(!s||!s.pics[picI]||!order)return;
+    try{sessionStorage.setItem(GKEY,JSON.stringify({sid:S.sid,pid:s.pics[picI].id,order:order,opened:opened,show:showAll}))}catch(e){}
+  }
+  function loadGame(p){
+    try{
+      var g=JSON.parse(sessionStorage.getItem(GKEY));
+      if(g&&g.sid===S.sid&&g.pid===p.id&&g.order&&g.order.length===16&&g.opened&&g.opened.length===16)return g;
+    }catch(e){}
+    return null;
+  }
   var stage=$("stage"),grid=$("grid"),rImg=$("rImg");
   function layout(){   // make the stage the same shape as the picture so the 4 x 4 boxes line up with it
     var ar=(rImg.naturalWidth&&rImg.naturalHeight)?rImg.naturalWidth/rImg.naturalHeight:4/3;
@@ -351,31 +364,37 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     var n=opened.filter(Boolean).length;
     $("rCount").textContent="📦 "+n+" / 16 boxes uncovered";
   }
-  function buildGrid(){
-    grid.innerHTML="";opened=[];
-    shuffled(COLORS).forEach(function(c,i){
+  function buildGrid(g){
+    grid.innerHTML="";
+    order=g?g.order:shuffled(COLORS);
+    opened=g?g.opened.slice():[];
+    order.forEach(function(c,i){
       var b=h("button","cbox","");
       b.style.background=c;
       b.setAttribute("aria-label","Box "+(i+1));
       b.onclick=function(){reveal(i)};
-      grid.appendChild(b);opened.push(false);
+      if(g){if(opened[i])b.classList.add("open")}else opened.push(false);
+      grid.appendChild(b);
     });
   }
   function reveal(i){
     if(showAll||opened[i])return;
-    opened[i]=true;grid.children[i].classList.add("open");updateCount();
+    opened[i]=true;grid.children[i].classList.add("open");updateCount();saveGame();
   }
   function setShow(on){
     showAll=on;
     grid.style.display=on?"none":"";
     $("rShow").textContent=on?"🙈 Hide again":"👁 Show answer";
     $("rAns").textContent=on?(st().pics[picI].name.trim()||"(no answer written)"):"";
+    saveGame();
   }
   function renderReveal(){
     var s=st(),p=s.pics[picI];
     showAll=false;grid.style.display="";
     $("rShow").textContent="👁 Show answer";$("rAns").textContent="";
-    buildGrid();updateCount();
+    var g=loadGame(p);
+    buildGrid(g);updateCount();
+    if(g&&g.show)setShow(true);else saveGame();
     rImg.onload=layout;
     rImg.onerror=function(){$("rAns").textContent="⚠️ Could not load this picture."};
     rImg.src=picUrl(p);
@@ -386,7 +405,7 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     var left=[];opened.forEach(function(o,i){if(!o)left.push(i)});
     if(left.length)reveal(left[Math.floor(Math.random()*left.length)]);
   };
-  $("rCover").onclick=function(){setShow(false);buildGrid();updateCount()};
+  $("rCover").onclick=function(){setShow(false);buildGrid();updateCount();saveGame()};
   $("rShow").onclick=function(){setShow(!showAll)};
   function step(d){var n=st().pics.length;picI=(picI+d+n)%n;saveView();renderReveal()}
   $("rPrev").onclick=function(){step(-1)};
