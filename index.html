@@ -338,7 +338,7 @@ input:focus{outline:3px solid var(--accent);outline-offset:1px}
     grid.innerHTML="";opened=[];
     COLORS.forEach(function(c,i){
       var b=h("button","cbox",String(i+1));
-      b.style.background=c;b.setAttribute("aria-label","Box "+(i+1));
+      // b.style.background=c;b.setAttribute("aria-label","Box "+(i+1));
       b.onclick=function(){reveal(i)};
       grid.appendChild(b);opened.push(false);
     });
